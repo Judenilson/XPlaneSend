@@ -28,13 +28,7 @@ int _sensorValueC = 0, _sensorValueSaveC = 0;
 int _sensorValueD = 0, _sensorValueSaveD = 0;
 int _sensorValueE = 0, _sensorValueSaveE = 0;
 int _sensorValueF = 0, _sensorValueSaveF = 0;
-float _potA = 0.0;	
-float _potB = 0.0;	
-float _potC = 0.0;	
-float _potD = 0.0;	
-float _potE = 0.0;	
-float _potF = 0.0;	
-const int _correcaoPot = 3;	// variação para correção do ruido no _potenciômetro
+const int _correcaoPot = 0;	// variação para correção do ruido no _potenciômetro
 
 // definindo GPIO dos Leds
 const int _redLeftPin = 27;
@@ -120,7 +114,7 @@ void setup() { // SETUP --------------------------------------------------------
 	digitalWrite(_greenRightPin, LOW);
 	digitalWrite(_parkBrakePin, LOW);
 
-  analogSetWidth(9); // setando as entradas analógicas para 9 bits
+  // analogSetWidth(9); // setando as entradas analógicas para 9 bits
 
   WiFi.mode(WIFI_STA); //setando o wifi p conectar num roteador wifi
   WiFi.begin(ssid, password); //inicializando o wifi
@@ -140,21 +134,120 @@ void setup() { // SETUP --------------------------------------------------------
   _Udp.begin(_infoXplane.port); //iniciando a comunicação UDP na porta do XP (padrão 49000)
   // Assinando as variáveis, para o XP começar a transmitir via UDP. 
   // (Frequência em Hz (vezes por segundo), ID, DataRef)
-  subscribeDataRef(2,1,"sim/flightmodel/controls/parkbrake");
-  subscribeDataRef(2,2,"sim/flightmodel2/gear/deploy_ratio[1]");
-  subscribeDataRef(2,3,"sim/flightmodel2/gear/deploy_ratio[0]");
-  subscribeDataRef(2,4,"sim/flightmodel2/gear/deploy_ratio[2]");
-  subscribeDataRef(2,5,"sim/cockpit2/controls/gear_handle_down");
-  subscribeDataRef(1,6,"sim/cockpit2/electrical/bus_volts[0]");
+  // subscribeDataRef(2,1,"sim/flightmodel/controls/parkbrake");
+  // subscribeDataRef(2,2,"sim/flightmodel2/gear/deploy_ratio[1]");
+  // subscribeDataRef(2,3,"sim/flightmodel2/gear/deploy_ratio[0]");
+  // subscribeDataRef(2,4,"sim/flightmodel2/gear/deploy_ratio[2]");
+  // subscribeDataRef(2,5,"sim/cockpit2/controls/gear_handle_down");
+  // subscribeDataRef(1,6,"sim/cockpit2/electrical/bus_volts[0]");
+
+  // remove
+  // subscribeDataRef(0,1,"sim/flightmodel/controls/parkbrake");
+  // subscribeDataRef(0,2,"sim/flightmodel2/gear/deploy_ratio[1]");
+  // subscribeDataRef(0,3,"sim/flightmodel2/gear/deploy_ratio[0]");
+  // subscribeDataRef(0,4,"sim/flightmodel2/gear/deploy_ratio[2]");
+  // subscribeDataRef(0,5,"sim/cockpit2/controls/gear_handle_down");
+  // subscribeDataRef(0,6,"sim/cockpit2/electrical/bus_volts[0]");
 
 // Usando DualCore para ler e escreder os dados via UDP ---------------------------------------------------------------
-	xTaskCreatePinnedToCore(readDataRefs, "readDataRefs", 4096, NULL, 1, &task_read, 1);
-	delay(127);
-	xTaskCreatePinnedToCore(writeDataRefs, "writeDataRefs", 4096, NULL, 1, &task_write, 0); 
-	delay(127);
+	// xTaskCreatePinnedToCore(readDataRefs, "readDataRefs", 4096, NULL, 1, &task_read, 1);
+	// delay(127);
+	// xTaskCreatePinnedToCore(writeDataRefs, "writeDataRefs", 4096, NULL, 1, &task_write, 0); 
+	// delay(127);
 }
 
 void loop(){ 
+	_sensorValueA = analogRead(_sensorPinA); 
+  _sensorValueB = analogRead(_sensorPinB); 
+  _sensorValueC = analogRead(_sensorPinC); 
+  _sensorValueD = analogRead(_sensorPinD); 
+  _sensorValueE = analogRead(_sensorPinE); 
+  _sensorValueF = analogRead(_sensorPinF); 
+  float _potValue = 0.0;
+  
+  // Serial.print(_sensorValueA); Serial.print(" - ");
+  // Serial.print(_sensorValueB); Serial.print(" - ");
+  // Serial.print(_sensorValueC); Serial.print(" - ");
+  // Serial.print(_sensorValueD); Serial.print(" - ");
+  // Serial.print(_sensorValueE); Serial.print(" - ");
+  // Serial.println(_sensorValueF);
+
+  if ((_sensorValueA < _sensorValueSaveA-_correcaoPot) || (_sensorValueA > _sensorValueSaveA+_correcaoPot)){
+  		int value = map(_sensorValueA,800,2700,255,0);
+  		_potValue = (float)value/256;
+  		if (_potValue <= 0){ _potValue = 0.0; }
+  		if (_potValue >= 1){ _potValue = 1.0; } 
+    	writeDataRef(_potValue,"sim/multiplayer/controls/speed_brake_request[0]");
+    	_sensorValueSaveA = _sensorValueA;
+	}
+  if ((_sensorValueB < _sensorValueSaveB-_correcaoPot) || (_sensorValueB > _sensorValueSaveB+_correcaoPot)){
+  		int value = map(_sensorValueB,500,2800,0,255);
+  		_potValue = (float)value/256;
+  		if (_potValue <= 0){ _potValue = 0.0; }
+  		if (_potValue >= 1){ _potValue = 1.0; } 
+    	writeDataRef(_potValue,"sim/flightmodel/engine/ENGN_thro[0]");	
+    	_sensorValueSaveB = _sensorValueB;
+	}
+  if ((_sensorValueC < _sensorValueSaveC-_correcaoPot) || (_sensorValueC > _sensorValueSaveC+_correcaoPot)){
+  		int value = map(_sensorValueC,500,2800,0,255);
+  		_potValue = (float)value/256;
+  		if (_potValue <= 0){ _potValue = 0.0; }
+  		if (_potValue >= 1){ _potValue = 1.0; } 
+    	writeDataRef(_potValue,"sim/flightmodel/engine/ENGN_thro[1]");
+    	_sensorValueSaveC = _sensorValueC;
+	}  
+	if (_sensorValueB < 400){
+  		if (_sensorValueB >= 200){ 
+  			writeDataRef(1,"sim/flightmodel/engine/ENGN_propmode[0]");			
+    	  writeDataRef(0.0,"sim/flightmodel/engine/ENGN_thro[0]");}
+  		else { 
+  			writeDataRef(3,"sim/flightmodel/engine/ENGN_propmode[0]");
+    	  writeDataRef(1.0,"sim/flightmodel/engine/ENGN_thro[0]");
+  		}    	
+    	_sensorValueSaveB = _sensorValueB;
+	}
+  if (_sensorValueC < 400){
+  		if (_sensorValueC >= 200){ 
+  			writeDataRef(1,"sim/flightmodel/engine/ENGN_propmode[1]");
+    	  writeDataRef(0.0,"sim/flightmodel/engine/ENGN_thro[1]");}
+  		else { 
+  			writeDataRef(3,"sim/flightmodel/engine/ENGN_propmode[1]");
+    	  writeDataRef(1.0,"sim/flightmodel/engine/ENGN_thro[1]");
+  		}    	
+    	_sensorValueSaveC = _sensorValueC;
+	}
+  if ((_sensorValueD < _sensorValueSaveD-_correcaoPot) || (_sensorValueD > _sensorValueSaveD+_correcaoPot)){
+  	  	int value = map(_sensorValueD,500,2800,115,270);
+  		_potValue = value;
+  		if (_potValue <= 115){ _potValue = 115; }
+  		if (_potValue >= 270){ _potValue = 270; } 
+    	writeDataRef(_potValue,"sim/cockpit2/engine/actuators/prop_rotation_speed_rad_sec_all");
+    	_sensorValueSaveD = _sensorValueD;
+	}
+  if ((_sensorValueE < _sensorValueSaveE-_correcaoPot) || (_sensorValueE > _sensorValueSaveE+_correcaoPot)){
+  		int value = map(_sensorValueE,500,2800,0,255);
+  		_potValue = (float)value/256;
+  		if (_potValue <= 0){ _potValue = 0.0; }
+  		if (_potValue >= 1){ _potValue = 1.0; } 
+    	writeDataRef(_potValue,"sim/flightmodel/engine/ENGN_mixt[0]");
+    	writeDataRef(_potValue,"sim/flightmodel/engine/ENGN_mixt[1]");
+    	_sensorValueSaveE = _sensorValueE;
+	}
+  if ((_sensorValueF < _sensorValueSaveF-_correcaoPot) || (_sensorValueF > _sensorValueSaveF+_correcaoPot)){
+  		int value = map(_sensorValueF,500,2800,255,0);
+  		_potValue = (float)value/256;
+  		if (_potValue <= 0){ _potValue = 0.0; }
+  		else if (_potValue > 0 && _potValue <= 0.125){ _potValue = 0.125; }
+  		else if (_potValue > 0.125 && _potValue <= 0.250){ _potValue = 0.250; }
+  		else if (_potValue > 0.250 && _potValue <= 0.375){ _potValue = 0.375; }
+  		else if (_potValue > 0.375 && _potValue <= 0.500){ _potValue = 0.500; }
+  		else if (_potValue > 0.500 && _potValue <= 0.625){ _potValue = 0.625; }
+  		else if (_potValue > 0.625 && _potValue <= 0.750){ _potValue = 0.750; }
+  		else if (_potValue > 0.750 && _potValue <= 0.875){ _potValue = 0.875; }
+  		else { _potValue = 1.0; }  
+    	writeDataRef(_potValue,"sim/cockpit2/controls/flap_ratio");
+    	_sensorValueSaveF = _sensorValueF;
+	}
 }
 
 void readDataRefs(void *args) {
@@ -194,73 +287,73 @@ void readDataRefs(void *args) {
 	}
 }
 
-void writeDataRefs(void *args){
-	while(1){
-		_sensorValueA = analogRead(_sensorPinA);
-	  _sensorValueB = analogRead(_sensorPinB);  
-	  _sensorValueC = analogRead(_sensorPinC);
-	  _sensorValueD = analogRead(_sensorPinD);
-	  _sensorValueE = analogRead(_sensorPinE);
-	  _sensorValueF = analogRead(_sensorPinF);
+// void writeDataRefs(void *args){
+// 	while(1){
+// 		_sensorValueA = analogRead(_sensorPinA);
+// 	  _sensorValueB = analogRead(_sensorPinB);  
+// 	  _sensorValueC = analogRead(_sensorPinC);
+// 	  _sensorValueD = analogRead(_sensorPinD);
+// 	  _sensorValueE = analogRead(_sensorPinE);
+// 	  _sensorValueF = analogRead(_sensorPinF);
 
-	  if ((_sensorValueA < _sensorValueSaveA-_correcaoPot) || (_sensorValueA > _sensorValueSaveA+_correcaoPot)){
-	  		int value = map(_sensorValueA,90,330,255,0);
-	  		_potA = (float)value/256;
-	  		if (_potA <= 0){ _potA = 0.0; }
-	  		if (_potA >= 1){ _potA = 1.0; } 
-	    	writeDataRef(_potA,"sim/multiplayer/controls/speed_brake_request[0]");
-	    	_sensorValueSaveA = _sensorValueA;
-		}
-	  if ((_sensorValueB < _sensorValueSaveB-_correcaoPot) || (_sensorValueB > _sensorValueSaveB+_correcaoPot)){
-	  		int value = map(_sensorValueB,90,330,0,255);
-	  		_potB = (float)value/256;
-	  		if (_potB <= 0){ _potB = 0.0; }
-	  		if (_potB >= 1){ _potB = 1.0; } 
-	    	writeDataRef(_potB,"sim/flightmodel/engine/ENGN_thro[0]");
-	    	_sensorValueSaveB = _sensorValueB;
-		}
-	  if ((_sensorValueC < _sensorValueSaveC-_correcaoPot) || (_sensorValueC > _sensorValueSaveC+_correcaoPot)){
-	  		int value = map(_sensorValueC,90,330,0,255);
-	  		_potC = (float)value/256;
-	  		if (_potC <= 0){ _potC = 0.0; }
-	  		if (_potC >= 1){ _potC = 1.0; } 
-	    	writeDataRef(_potC,"sim/flightmodel/engine/ENGN_thro[1]");
-	    	_sensorValueSaveC = _sensorValueC;
-		}
-	  if ((_sensorValueD < _sensorValueSaveD-_correcaoPot) || (_sensorValueD > _sensorValueSaveD+_correcaoPot)){
-	  	  	int value = map(_sensorValueD,90,330,115,270);
-	  		_potD = value;
-	  		if (_potD <= 115){ _potD = 115; }
-	  		if (_potD >= 270){ _potD = 270; } 
-	    	writeDataRef(_potD,"sim/cockpit2/engine/actuators/prop_rotation_speed_rad_sec_all");
-	    	_sensorValueSaveD = _sensorValueD;
-		}
-	  if ((_sensorValueE < _sensorValueSaveE-_correcaoPot) || (_sensorValueE > _sensorValueSaveE+_correcaoPot)){
-	  		int value = map(_sensorValueE,90,330,0,255);
-	  		_potE = (float)value/256;
-	  		if (_potE <= 0){ _potE = 0.0; }
-	  		if (_potE >= 1){ _potE = 1.0; } 
-	    	writeDataRef(_potE,"sim/flightmodel/engine/ENGN_mixt[0]");
-	    	writeDataRef(_potE,"sim/flightmodel/engine/ENGN_mixt[1]");
-	    	_sensorValueSaveE = _sensorValueE;
-		}
-	  if ((_sensorValueF < _sensorValueSaveF-_correcaoPot) || (_sensorValueF > _sensorValueSaveF+_correcaoPot)){
-	  		int value = map(_sensorValueF,90,330,255,0);
-	  		_potF = (float)value/256;
-	  		if (_potF <= 0){ _potF = 0.0; }
-	  		else if (_potF > 0 && _potF <= 0.125){ _potF = 0.125; }
-	  		else if (_potF > 0.125 && _potF <= 0.250){ _potF = 0.250; }
-	  		else if (_potF > 0.250 && _potF <= 0.375){ _potF = 0.375; }
-	  		else if (_potF > 0.375 && _potF <= 0.500){ _potF = 0.500; }
-	  		else if (_potF > 0.500 && _potF <= 0.625){ _potF = 0.625; }
-	  		else if (_potF > 0.625 && _potF <= 0.750){ _potF = 0.750; }
-	  		else if (_potF > 0.750 && _potF <= 0.875){ _potF = 0.875; }
-	  		else { _potF = 1.0; }  
-	    	writeDataRef(_potF,"sim/cockpit2/controls/flap_ratio");
-	    	_sensorValueSaveF = _sensorValueF;
-		}
-	}
-}
+// 	  if ((_sensorValueA < _sensorValueSaveA-_correcaoPot) || (_sensorValueA > _sensorValueSaveA+_correcaoPot)){
+// 	  		int value = map(_sensorValueA,90,330,511,0);
+// 	  		_potA = (float)value/512;
+// 	  		if (_potA <= 0){ _potA = 0.0; }
+// 	  		if (_potA >= 1){ _potA = 1.0; } 
+// 	    	writeDataRef(_potA,"sim/multiplayer/controls/speed_brake_request[0]");
+// 	    	_sensorValueSaveA = _sensorValueA;
+// 		}
+// 	  if ((_sensorValueB < _sensorValueSaveB-_correcaoPot) || (_sensorValueB > _sensorValueSaveB+_correcaoPot)){
+// 	  		int value = map(_sensorValueB,90,330,0,511);
+// 	  		_potB = (float)value/512;
+// 	  		if (_potB <= 0){ _potB = 0.0; }
+// 	  		if (_potB >= 1){ _potB = 1.0; } 
+// 	    	writeDataRef(_potB,"sim/flightmodel/engine/ENGN_thro[0]");
+// 	    	_sensorValueSaveB = _sensorValueB;
+// 		}
+// 	  if ((_sensorValueC < _sensorValueSaveC-_correcaoPot) || (_sensorValueC > _sensorValueSaveC+_correcaoPot)){
+// 	  		int value = map(_sensorValueC,90,330,0,511);
+// 	  		_potC = (float)value/512;
+// 	  		if (_potC <= 0){ _potC = 0.0; }
+// 	  		if (_potC >= 1){ _potC = 1.0; } 
+// 	    	writeDataRef(_potC,"sim/flightmodel/engine/ENGN_thro[1]");
+// 	    	_sensorValueSaveC = _sensorValueC;
+// 		}
+// 	  if ((_sensorValueD < _sensorValueSaveD-_correcaoPot) || (_sensorValueD > _sensorValueSaveD+_correcaoPot)){
+// 	  	  	int value = map(_sensorValueD,90,330,115,270);
+// 	  		_potD = value;
+// 	  		if (_potD <= 115){ _potD = 115; }
+// 	  		if (_potD >= 270){ _potD = 270; } 
+// 	    	writeDataRef(_potD,"sim/cockpit2/engine/actuators/prop_rotation_speed_rad_sec_all");
+// 	    	_sensorValueSaveD = _sensorValueD;
+// 		}
+// 	  if ((_sensorValueE < _sensorValueSaveE-_correcaoPot) || (_sensorValueE > _sensorValueSaveE+_correcaoPot)){
+// 	  		int value = map(_sensorValueE,90,330,0,511);
+// 	  		_potE = (float)value/512;
+// 	  		if (_potE <= 0){ _potE = 0.0; }
+// 	  		if (_potE >= 1){ _potE = 1.0; } 
+// 	    	writeDataRef(_potE,"sim/flightmodel/engine/ENGN_mixt[0]");
+// 	    	writeDataRef(_potE,"sim/flightmodel/engine/ENGN_mixt[1]");
+// 	    	_sensorValueSaveE = _sensorValueE;
+// 		}
+// 	  if ((_sensorValueF < _sensorValueSaveF-_correcaoPot) || (_sensorValueF > _sensorValueSaveF+_correcaoPot)){
+// 	  		int value = map(_sensorValueF,90,330,511,0);
+// 	  		_potF = (float)value/512;
+// 	  		if (_potF <= 0){ _potF = 0.0; }
+// 	  		else if (_potF > 0 && _potF <= 0.125){ _potF = 0.125; }
+// 	  		else if (_potF > 0.125 && _potF <= 0.250){ _potF = 0.250; }
+// 	  		else if (_potF > 0.250 && _potF <= 0.375){ _potF = 0.375; }
+// 	  		else if (_potF > 0.375 && _potF <= 0.500){ _potF = 0.500; }
+// 	  		else if (_potF > 0.500 && _potF <= 0.625){ _potF = 0.625; }
+// 	  		else if (_potF > 0.625 && _potF <= 0.750){ _potF = 0.750; }
+// 	  		else if (_potF > 0.750 && _potF <= 0.875){ _potF = 0.875; }
+// 	  		else { _potF = 1.0; }  
+// 	    	writeDataRef(_potF,"sim/cockpit2/controls/flap_ratio");
+// 	    	_sensorValueSaveF = _sensorValueF;
+// 		}
+// 	}
+// }
 
 // método para enviar as datarefs e valores no simulador.
 void writeDataRef(float value, String dataref) {
